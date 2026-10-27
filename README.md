@@ -4,7 +4,7 @@ Portal berita dibangun dengan **hexagonal architecture** (ports & adapters), yan
 
 ## Susunan folder
 
-```
+```bash
 .
 ├── cmd/
 ├── configs/
