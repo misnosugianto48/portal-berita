@@ -6,11 +6,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func RunServer() {
+func RunServer() error {
 	cfg := configs.NewConfig()
 	_, err := cfg.ConnectPostgres()
 	if err != nil {
 		log.Fatal().Msgf("Error connecting database: %v", err)
-		return
 	}
+
+	log.Info().Msg("postgres connected")
+	return nil
 }
