@@ -12,6 +12,7 @@ func RunServer() error {
 	if err != nil {
 		log.Fatal().Msgf("Error connecting database: %v", err)
 	}
+	cfg.LoadAwsConfig()
 
 	log.Info().Msg("postgres connected")
 	return nil
