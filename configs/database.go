@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"portal-berita/databases/seeders"
 
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
@@ -31,6 +32,8 @@ func (cfg Config) ConnectPostgres() (*Postgres, error) {
 			Msg("[ConnectionPostgres-2] failed to get database connection")
 		return nil, err
 	}
+
+	seeders.SeedRoles(db)
 
 	sqlDB.SetMaxOpenConns(cfg.Psql.DBMaxOpenPool)
 	sqlDB.SetMaxIdleConns(cfg.Psql.DBMaxIddle)
