@@ -2,6 +2,7 @@ package apps
 
 import (
 	"portal-berita/configs"
+	"portal-berita/libs/auth"
 
 	"github.com/rs/zerolog/log"
 )
@@ -13,7 +14,7 @@ func RunServer() error {
 		log.Fatal().Msgf("Error connecting database: %v", err)
 	}
 	cfg.LoadAwsConfig()
-
+	auth.CreateToken(cfg)
 	log.Info().Msg("postgres connected")
 	return nil
 }
