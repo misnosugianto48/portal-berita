@@ -2,7 +2,7 @@ package entity
 
 import "github.com/golang-jwt/jwt/v5"
 
-type JsonWebTokenData struct {
+type JWTClaims struct {
 	UserId float64 `json:"user_id"`
 	jwt.RegisteredClaims
 }

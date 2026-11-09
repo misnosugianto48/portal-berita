@@ -14,7 +14,7 @@ func RunServer() error {
 		log.Fatal().Msgf("Error connecting database: %v", err)
 	}
 	cfg.LoadAwsConfig()
-	auth.CreateToken(cfg)
+	auth.NewJWTService(cfg)
 	log.Info().Msg("postgres connected")
 	return nil
 }

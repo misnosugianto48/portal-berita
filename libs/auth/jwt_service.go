@@ -9,23 +9,23 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type JsonWebToken interface {
-	GenerateToken(data *entity.JsonWebTokenData) (string, int64, error)
-	VerifyAccessToken(token string) (*entity.JsonWebTokenData, error)
+type JWTService interface {
+	GenerateAccessToken(data *entity.JWTClaims) (string, int64, error)
+	VerifyAccessToken(token string) (*entity.JWTClaims, error)
 }
 
-type Options struct {
+type JWTConfig struct {
 	signingKey string
 	issuer     string
 }
 
-// GenerateToken implements [JsonWebToken].
-func (o *Options) GenerateToken(data *entity.JsonWebTokenData) (string, int64, error) {
+// GenerateAccessToken implements [JWTService].
+func (o *JWTConfig) GenerateAccessToken(data *entity.JWTClaims) (string, int64, error) {
 	now := time.Now().Local()
 	expiredAt := now.Add(time.Hour * 24)
-	data.RegisteredClaims.ExpiresAt = jwt.NewNumericDate(expiredAt)
-	data.RegisteredClaims.Issuer = o.issuer
-	data.RegisteredClaims.NotBefore = jwt.NewNumericDate(now)
+	data.ExpiresAt = jwt.NewNumericDate(expiredAt)
+	data.Issuer = o.issuer
+	data.NotBefore = jwt.NewNumericDate(now)
 	createAccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, data)
 
 	accessToken, err := createAccessToken.SignedString([]byte(o.signingKey))
@@ -37,9 +37,9 @@ func (o *Options) GenerateToken(data *entity.JsonWebTokenData) (string, int64, e
 	return accessToken, expiredAt.Unix(), nil
 }
 
-// VerifyAccessToken implements [JsonWebToken].
-func (o *Options) VerifyAccessToken(token string) (*entity.JsonWebTokenData, error) {
-	parsedToken, err := jwt.ParseWithClaims(token, &entity.JsonWebTokenData{}, func(t *jwt.Token) (interface{}, error) {
+// VerifyAccessToken implements [JWTService].
+func (o *JWTConfig) VerifyAccessToken(token string) (*entity.JWTClaims, error) {
+	parsedToken, err := jwt.ParseWithClaims(token, &entity.JWTClaims{}, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Signing method invalid")
 		}
@@ -54,7 +54,7 @@ func (o *Options) VerifyAccessToken(token string) (*entity.JsonWebTokenData, err
 		return nil, fmt.Errorf("Token is not valid")
 	}
 
-	claims, ok := parsedToken.Claims.(*entity.JsonWebTokenData)
+	claims, ok := parsedToken.Claims.(*entity.JWTClaims)
 	if !ok {
 		return nil, fmt.Errorf("failed to parse claims")
 	}
@@ -62,8 +62,8 @@ func (o *Options) VerifyAccessToken(token string) (*entity.JsonWebTokenData, err
 	return claims, nil
 }
 
-func CreateToken(cfg *configs.Config) JsonWebToken {
-	option := new(Options)
+func NewJWTService(cfg *configs.Config) JWTService {
+	option := new(JWTConfig)
 	option.signingKey = cfg.App.JwtSecretKey
 	option.issuer = cfg.App.JwtIssuer
 
