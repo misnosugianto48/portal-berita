@@ -24,14 +24,17 @@ type Paginator struct{}
 // - FirstItem: 1-based index of first item on this page
 // - LastItem: 1-based index of last item on this page
 func (p *Paginator) Calculate(totalItems, page, perPage int) (*entity.PaginationMeta, error) {
-	// Validate page
+	// Validate page: 0 is empty, less than 1 is invalid
+	if page == 0 {
+		return nil, ErrPageEmpty
+	}
 	if page < 1 {
 		return nil, ErrPageInvalid
 	}
 
-	// Default perPage to 10 if not provided or invalid
+	// Validate perPage
 	if perPage < 1 {
-		perPage = 10
+		return nil, ErrPerPageInvalid
 	}
 
 	// Calculate total pages
