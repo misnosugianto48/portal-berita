@@ -2,14 +2,14 @@ package seeders
 
 import (
 	"portal-berita/internal/core/domains/models"
+	"portal-berita/libs/conv"
 
 	"github.com/rs/zerolog/log"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 func SeedRoles(db *gorm.DB) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), 14)
+	hashedPassword, err := conv.HashPassword("admin123")
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error hashing password")
 	}
