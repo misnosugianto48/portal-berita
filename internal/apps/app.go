@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/logger"
+	"github.com/gofiber/fiber/v3/middleware/recover"
 
 	"github.com/rs/zerolog/log"
 )
@@ -33,7 +33,6 @@ func RunServer() error {
 	log.Info().Msg("postgres connected")
 
 	app := fiber.New(fiber.Config{
-		Prefork:       true,
 		CaseSensitive: true,
 		StrictRouting: true,
 		ServerHeader:  "Fiber",
@@ -53,7 +52,7 @@ func RunServer() error {
 	}
 
 	go func() {
-		err := app.Listen(":" + cfg.App.AppPort)
+		err := app.Listen(":"+cfg.App.AppPort, fiber.ListenConfig{EnablePrefork: true})
 		if err != nil {
 			log.Fatal().Msgf("error starting server: %v", err)
 		}
