@@ -20,6 +20,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.6 // indirect
 	github.com/aws/smithy-go v1.28.7 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.16 // indirect
+	github.com/go-playground/locales v0.14.2 // indirect
+	github.com/go-playground/universal-translator v0.18.2 // indirect
 	github.com/gofiber/schema v1.9.3 // indirect
 	github.com/gofiber/utils/v2 v2.6.4 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
@@ -30,6 +33,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/leodido/go-urn v1.5.0 // indirect
 	github.com/mattn/go-colorable v0.1.16 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
@@ -47,6 +51,7 @@ require (
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/go-playground/validator/v10 v10.30.6
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gofiber/fiber/v2 v2.52.16
 	github.com/gofiber/fiber/v3 v3.7.0
