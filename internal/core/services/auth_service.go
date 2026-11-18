@@ -21,7 +21,7 @@ type AuthServices interface {
 type authServices struct {
 	authRepositories repositories.AuthRepositories
 	cfg              *configs.Config
-	jwtToken         auth.JWTConfig
+	jwtToken         auth.JWTService
 }
 
 // GetUserByEmail implements [AuthServices].
@@ -63,6 +63,6 @@ func (a *authServices) GetUserByEmail(ctx context.Context, req entity.LoginReque
 	return &response, nil
 }
 
-func NewAuthService(authRepositories repositories.AuthRepositories, cfg *configs.Config, jwtToken auth.JWTConfig) AuthServices {
+func NewAuthService(authRepositories repositories.AuthRepositories, cfg *configs.Config, jwtToken auth.JWTService) AuthServices {
 	return &authServices{authRepositories: authRepositories, cfg: cfg, jwtToken: jwtToken}
 }

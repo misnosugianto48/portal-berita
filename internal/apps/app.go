@@ -5,6 +5,9 @@ import (
 	"os"
 	"os/signal"
 	"portal-berita/configs"
+	"portal-berita/internal/adapters/handlers"
+	"portal-berita/internal/adapters/repositories"
+	"portal-berita/internal/core/services"
 	"portal-berita/libs/auth"
 	"portal-berita/libs/middlewares"
 	"portal-berita/libs/paginations"
@@ -21,22 +24,31 @@ import (
 
 func RunServer() error {
 	cfg := configs.NewConfig()
-	_, err := cfg.ConnectPostgres()
+	db, err := cfg.ConnectPostgres()
 	if err != nil {
 		log.Fatal().Msgf("Error connecting database: %v", err)
 	}
 	cfg.LoadAwsConfig()
-	auth.NewJWTService(cfg)
+	jwt := auth.NewJWTService(cfg)
 	middlewares.NewMiddlewareService(cfg)
 	paginations.NewPaginator()
 
 	log.Info().Msg("postgres connected")
 
+	// repositories
+	authRepo := repositories.NewAuthRepositories(db.DB)
+
+	// services
+	authService := services.NewAuthService(authRepo, cfg, jwt)
+
+	// handlers
+	authHandler := handlers.NewAuthHandlers(authService)
+
 	app := fiber.New(fiber.Config{
-		CaseSensitive: true,
-		StrictRouting: true,
-		ServerHeader:  "Fiber",
-		AppName:       "Portal App v1.0.1",
+		CaseSensitive:   true,
+		StrictRouting:   true,
+		ServerHeader:    "Fiber",
+		AppName:         "Portal App v1.0.1",
 		StructValidator: configs.NewStructValidator(),
 	})
 
@@ -46,7 +58,8 @@ func RunServer() error {
 		Format: "[${time}] ${ip} ${status} - ${latency} ${method} ${path}\n",
 	}))
 
-	_ = app.Group("/api")
+	api := app.Group("/api/v1")
+	api.Post("/login", authHandler.Login)
 
 	if cfg.App.AppPort == "" {
 		cfg.App.AppPort = os.Getenv("APP_PORT")
