@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
-
 	"portal-berita/internal/adapters/handlers/requests"
 	"portal-berita/internal/adapters/handlers/responses"
 	"portal-berita/internal/core/domains/entity"
@@ -32,7 +30,7 @@ func (a *authHandlers) Login(c fiber.Ctx) error {
 	req := requests.LoginRequest{}
 	res := responses.SuccessAuthResponse{}
 
-	if err := json.Unmarshal(c.BodyRaw(), &req); err != nil {
+	if err := c.Bind().JSON(&req); err != nil {
 		code = "[HANDLER] Login - 1"
 		log.Error().Err(err).Msg(code)
 		errorResponse.Meta.Status = false
