@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
+	"strings"
+
 	"portal-berita/internal/adapters/handlers/requests"
 	"portal-berita/internal/adapters/handlers/responses"
 	"portal-berita/internal/core/domains/entity"
@@ -10,8 +14,6 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 )
-
-var validate = validator.New()
 
 type AuthHandlersInterface interface {
 	Login(c fiber.Ctx) error
@@ -23,7 +25,6 @@ type authHandlers struct {
 
 // Login implements [AuthHandlersInterface].
 func (a *authHandlers) Login(c fiber.Ctx) error {
-	var err error
 	var code string
 	var errorResponse responses.ErrorResponseDefault
 
@@ -34,16 +35,7 @@ func (a *authHandlers) Login(c fiber.Ctx) error {
 		code = "[HANDLER] Login - 1"
 		log.Error().Err(err).Msg(code)
 		errorResponse.Meta.Status = false
-		errorResponse.Meta.Message = err.Error()
-
-		return c.Status(fiber.StatusBadRequest).JSON(errorResponse)
-	}
-
-	if err = validate.Struct(req); err != nil {
-		code = "[HANDLER] Login - 2"
-		log.Error().Err(err).Msg(code)
-		errorResponse.Meta.Status = false
-		errorResponse.Meta.Message = err.Error()
+		errorResponse.Meta.Message = bindErrorMessage(err)
 
 		return c.Status(fiber.StatusBadRequest).JSON(errorResponse)
 	}
@@ -69,6 +61,20 @@ func (a *authHandlers) Login(c fiber.Ctx) error {
 	res.ExpiresAt = result.ExpiresAt.Unix()
 
 	return c.JSON(res)
+}
+
+// bindErrorMessage unwraps validation errors into "Field: tag" messages;
+// anything else (e.g. malformed JSON) is returned as-is.
+func bindErrorMessage(err error) string {
+	var validationErrors validator.ValidationErrors
+	if errors.As(err, &validationErrors) {
+		msgs := make([]string, 0, len(validationErrors))
+		for _, e := range validationErrors {
+			msgs = append(msgs, fmt.Sprintf("%s: failed on '%s'", e.Field(), e.Tag()))
+		}
+		return strings.Join(msgs, ", ")
+	}
+	return err.Error()
 }
 
 func NewAuthHandlers(authServices services.AuthServices) AuthHandlersInterface {

@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/logger"
@@ -18,6 +19,16 @@ import (
 
 	"github.com/rs/zerolog/log"
 )
+
+// structValidator adapts go-playground/validator to fiber's StructValidator interface.
+type structValidator struct {
+	validate *validator.Validate
+}
+
+// Validate implements fiber.Config.StructValidator.
+func (v *structValidator) Validate(out any) error {
+	return v.validate.Struct(out)
+}
 
 func RunServer() error {
 	cfg := configs.NewConfig()
@@ -37,6 +48,7 @@ func RunServer() error {
 		StrictRouting: true,
 		ServerHeader:  "Fiber",
 		AppName:       "Portal App v1.0.1",
+		StructValidator: &structValidator{validate: validator.New()},
 	})
 
 	app.Use(cors.New())
