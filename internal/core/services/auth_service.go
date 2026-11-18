@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"portal-berita/configs"
 	"portal-berita/internal/adapters/repositories"
 	"portal-berita/internal/core/domains/entity"
@@ -33,14 +33,16 @@ func (a *authServices) GetUserByEmail(ctx context.Context, req entity.LoginReque
 	result, err = a.authRepositories.GetUserByEmail(ctx, req)
 	if err != nil {
 		code = "[SERVICE] GetByUserEmail - 1"
+		err = errors.New("Invalid credentials")
 		log.Errorw(code, err)
 		return nil, err
 	}
 
 	if validPass := conv.ComparePassword(req.Password, result.Password); !validPass {
 		code = "[SERVICE] GetByUserEmail - 2"
-		log.Errorw(code, "Invalid Password")
-		return nil, fmt.Errorf("invalid password")
+		err = errors.New("Invalid credentials")
+		log.Errorw(code, err)
+		return nil, err
 	}
 
 	jwtData := entity.JWTClaims{UserId: float64(result.Id), RegisteredClaims: jwt.RegisteredClaims{
