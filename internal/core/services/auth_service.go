@@ -8,11 +8,14 @@ import (
 	"portal-berita/internal/core/domains/entity"
 	"portal-berita/libs/auth"
 	"portal-berita/libs/conv"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/golang-jwt/jwt/v5"
 )
+
+var ErrInvalidCredentials = errors.New("invalid credentials")
 
 type AuthServices interface {
 	GetUserByEmail(ctx context.Context, req entity.LoginRequest) (*entity.JWTAccessToken, error)
@@ -32,22 +35,23 @@ func (a *authServices) GetUserByEmail(ctx context.Context, req entity.LoginReque
 
 	result, err = a.authRepositories.GetUserByEmail(ctx, req)
 	if err != nil {
+		if errors.Is(err, repositories.ErrUserNotFound) {
+			return nil, ErrInvalidCredentials
+		}
 		code = "[SERVICE] GetByUserEmail - 1"
-		err = errors.New("Invalid credentials")
 		log.Errorw(code, err)
 		return nil, err
 	}
 
 	if validPass := conv.ComparePassword(req.Password, result.Password); !validPass {
 		code = "[SERVICE] GetByUserEmail - 2"
-		err = errors.New("Invalid credentials")
-		log.Errorw(code, err)
-		return nil, err
+		log.Errorw(code, "invalid password")
+		return nil, ErrInvalidCredentials
 	}
 
 	jwtData := entity.JWTClaims{UserId: float64(result.Id), RegisteredClaims: jwt.RegisteredClaims{
 		NotBefore: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
-		ID:        string(result.Id),
+		ID:        strconv.FormatInt(result.Id, 10),
 	}}
 
 	accessToken, expiresAt, err := a.jwtToken.GenerateAccessToken(&jwtData)

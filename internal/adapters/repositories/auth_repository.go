@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"context"
+	"errors"
+
 	"portal-berita/internal/core/domains/entity"
 	"portal-berita/internal/core/domains/models"
 
@@ -9,8 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var err error
-var code string
+var ErrUserNotFound = errors.New("user not found")
 
 type AuthRepositories interface {
 	GetUserByEmail(ctx context.Context, req entity.LoginRequest) (*entity.UserEntity, error)
@@ -22,19 +23,23 @@ type authRepositories struct {
 
 // GetUserByEmail implements [AuthRepositories].
 func (a *authRepositories) GetUserByEmail(ctx context.Context, req entity.LoginRequest) (*entity.UserEntity, error) {
-	var modelUser models.User
+	modelUser := models.User{}
 
-	err = a.db.Where("email = ?", req.Email).First(&modelUser).Error
-	if err != nil {
-		code = "[REPOSITORY] GetUserByEmail - 1"
+	if err := a.db.WithContext(ctx).Where("email = ?", req.Email).First(&modelUser).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		code := "[REPOSITORY] GetUserByEmail - 1"
 		log.Errorw(code, err)
 		return nil, err
 	}
+
 	response := entity.UserEntity{
 		Id:       modelUser.Id,
 		Name:     modelUser.Name,
 		Email:    modelUser.Email,
-		Password: modelUser.Password}
+		Password: modelUser.Password,
+	}
 
 	return &response, nil
 }

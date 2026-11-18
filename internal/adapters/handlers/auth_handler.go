@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+
 	"portal-berita/internal/adapters/handlers/requests"
 	"portal-berita/internal/adapters/handlers/responses"
 	"portal-berita/internal/core/domains/entity"
@@ -42,11 +44,16 @@ func (a *authHandlers) Login(c fiber.Ctx) error {
 
 	result, err := a.authServices.GetUserByEmail(c.Context(), reqLogin)
 	if err != nil {
-		code = "[HANDLER] Login - 3"
+		code = "[HANDLER] Login - 2"
 		log.Error().Err(err).Msg(code)
 		errorResponse.Meta.Status = false
-		errorResponse.Meta.Message = err.Error()
 
+		if errors.Is(err, services.ErrInvalidCredentials) {
+			errorResponse.Meta.Message = "Invalid credentials"
+			return c.Status(fiber.StatusUnauthorized).JSON(errorResponse)
+		}
+
+		errorResponse.Meta.Message = err.Error()
 		return c.Status(fiber.StatusInternalServerError).JSON(errorResponse)
 	}
 
