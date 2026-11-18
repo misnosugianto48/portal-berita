@@ -1,20 +1,22 @@
 package handlers
 
 import (
+	"encoding/json"
+
 	"portal-berita/internal/adapters/handlers/requests"
 	"portal-berita/internal/adapters/handlers/responses"
 	"portal-berita/internal/core/domains/entity"
 	"portal-berita/internal/core/services"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 )
 
 var validate = validator.New()
 
 type AuthHandlersInterface interface {
-	Login(c *fiber.Ctx) error
+	Login(c fiber.Ctx) error
 }
 
 type authHandlers struct {
@@ -22,7 +24,7 @@ type authHandlers struct {
 }
 
 // Login implements [AuthHandlersInterface].
-func (a *authHandlers) Login(c *fiber.Ctx) error {
+func (a *authHandlers) Login(c fiber.Ctx) error {
 	var err error
 	var code string
 	var errorResponse responses.ErrorResponseDefault
@@ -30,7 +32,7 @@ func (a *authHandlers) Login(c *fiber.Ctx) error {
 	req := requests.LoginRequest{}
 	res := responses.SuccessAuthResponse{}
 
-	if err := c.BodyParser(&req); err != nil {
+	if err := json.Unmarshal(c.BodyRaw(), &req); err != nil {
 		code = "[HANDLER] Login - 1"
 		log.Error().Err(err).Msg(code)
 		errorResponse.Meta.Status = false

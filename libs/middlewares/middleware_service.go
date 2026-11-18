@@ -6,7 +6,7 @@ import (
 	"portal-berita/libs/auth"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 type MiddlewaresService interface {
@@ -19,7 +19,7 @@ type MiddlewareConfig struct {
 
 // CheckToken implements [MiddlewaresService].
 func (m *MiddlewareConfig) CheckToken() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		var errorResponse responses.ErrorResponseDefault
 
 		authHandler := c.Get("Authorization")
