@@ -30,19 +30,22 @@ func RunServer() error {
 	}
 	cfg.LoadAwsConfig()
 	jwt := auth.NewJWTService(cfg)
-	middlewares.NewMiddlewareService(cfg)
+	authMiddleware := middlewares.NewMiddlewareService(cfg)
 	paginations.NewPaginator()
 
 	log.Info().Msg("postgres connected")
 
 	// repositories
 	authRepo := repositories.NewAuthRepositories(db.DB)
+	categoryRepo := repositories.NewCategoryRepository(db.DB)
 
 	// services
 	authService := services.NewAuthService(authRepo, cfg, jwt)
+	categoryServ := services.NewCategoryService(categoryRepo)
 
 	// handlers
 	authHandler := handlers.NewAuthHandlers(authService)
+	categoryHandler := handlers.NewCategoryHandler(categoryServ)
 
 	app := fiber.New(fiber.Config{
 		CaseSensitive:   true,
@@ -59,7 +62,15 @@ func RunServer() error {
 	}))
 
 	api := app.Group("/api/v1")
+
+	// auth
 	api.Post("/login", authHandler.Login)
+
+	// categories (admin only)
+
+	categories := api.Group("/categories", authMiddleware.CheckToken())
+
+	categories.Get("/:id", categoryHandler.GetCategoryById)
 
 	if cfg.App.AppPort == "" {
 		cfg.App.AppPort = os.Getenv("APP_PORT")
