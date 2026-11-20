@@ -11,9 +11,10 @@ import (
 )
 
 var ErrCategoryNotFound = errors.New("category not found")
+var ErrDuplicated = errors.New("duplicate same key")
 
 type CategoryRepository interface {
-	CreateCategory(ctx context.Context, req entity.CategoryEntity) error
+	CreateCategory(ctx context.Context, req entity.CategoryEntity) (*entity.CategoryEntity, error)
 	GetCategories(ctx context.Context) ([]entity.CategoryEntity, error)
 	GetCategoryById(ctx context.Context, id int64) (*entity.CategoryEntity, error)
 	UpdateCategoryById(ctx context.Context, id int64, req entity.CategoryEntity) error
@@ -25,23 +26,32 @@ type categoryRepository struct {
 }
 
 // CreateCategory implements [CategoryRepository].
-func (c *categoryRepository) CreateCategory(ctx context.Context, req entity.CategoryEntity) error {
-	// [PSEUDOCODE]
-	// 1. Petakan domain entity ke GORM model:
-	//    category := models.Category{
-	//        Title:       req.Title,
-	//        Slug:        req.Slug,
-	//        CreatedById: req.CreatedById,
-	//    }
-	// 2. Simpan record ke database menggunakan context:
-	//    err := c.db.WithContext(ctx).Create(&category).Error
-	// 3. Jika err != nil -> catat log error dan kembalikan error.
-	// 4. Jika sukses -> return nil.
-	//
-	// [TODO]
-	// - Tangani error duplicate key jika slug sudah terdaftar (PostgreSQL unique constraint pada 'slug').
-	// - Gunakan logging terstruktur (misal zerolog atau passing key-value pair pada log.Errorw).
-	panic("unimplemented")
+func (c *categoryRepository) CreateCategory(ctx context.Context, req entity.CategoryEntity) (*entity.CategoryEntity, error) {
+
+	category := models.Category{
+		Title:       req.Title,
+		Slug:        req.Slug,
+		CreatedById: req.CreatedById,
+	}
+
+	if err := c.db.WithContext(ctx).Create(&category).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, ErrDuplicated
+		}
+
+		code := "[REPOSITORY] CreateCategory - 1"
+		log.Errorw(code, err)
+		return nil, err
+	}
+
+	return &entity.CategoryEntity{
+		Id:          category.Id,
+		Title:       category.Title,
+		Slug:        category.Slug,
+		CreatedById: category.CreatedById,
+		CreatedAt:   category.CreatedAt,
+		UpdatedAt:   category.UpdatedAt,
+	}, nil
 }
 
 // DeleteCategoryById implements [CategoryRepository].
@@ -108,9 +118,10 @@ func (c *categoryRepository) GetCategoryById(ctx context.Context, id int64) (*en
 	}
 
 	response := entity.CategoryEntity{
-		Id:    modelCategory.Id,
-		Title: modelCategory.Title,
-		Slug:  modelCategory.Slug,
+		Id:          modelCategory.Id,
+		Title:       modelCategory.Title,
+		Slug:        modelCategory.Slug,
+		CreatedById: modelCategory.CreatedById,
 		User: entity.UserEntity{
 			Id:   modelCategory.User.Id,
 			Name: modelCategory.User.Name,

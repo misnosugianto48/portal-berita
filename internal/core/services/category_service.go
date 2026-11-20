@@ -5,6 +5,7 @@ import (
 	"errors"
 	"portal-berita/internal/adapters/repositories"
 	"portal-berita/internal/core/domains/entity"
+	"portal-berita/libs/conv"
 
 	"github.com/gofiber/fiber/v3/log"
 )
@@ -12,7 +13,7 @@ import (
 var ErrInvalidId = errors.New("invalid id")
 
 type CategoryService interface {
-	CreateCategory(ctx context.Context, req entity.CategoryEntity) error
+	CreateCategory(ctx context.Context, req entity.CategoryEntity) (*entity.CategoryEntity, error)
 	GetCategories(ctx context.Context) ([]entity.CategoryEntity, error)
 	GetCategoryById(ctx context.Context, id int64) (*entity.CategoryEntity, error)
 	UpdateCategoryById(ctx context.Context, id int64, req entity.CategoryEntity) error
@@ -24,25 +25,30 @@ type categoryService struct {
 }
 
 // CreateCategory implements [CategoryService].
-func (c *categoryService) CreateCategory(ctx context.Context, req entity.CategoryEntity) error {
+func (c *categoryService) CreateCategory(ctx context.Context, req entity.CategoryEntity) (*entity.CategoryEntity, error) {
 	// [PSEUDOCODE]
-	// 1. Validasi data input:
-	//    if req.Title == "" -> return errors.New("title is required")
-	//    if req.CreatedById <= 0 -> return errors.New("invalid user id")
-	// 2. Generate slug otomatis jika slug belum diisi:
-	//    if req.Slug == "" {
-	//        req.Slug = conv.GenerateSlug(req.Title)
-	//    }
-	// 3. Teruskan ke repository untuk persistensi data:
-	//    err := c.categoryrepo.CreateCategory(ctx, req)
-	//    if err != nil -> catat log error, return err
-	// 4. Return nil jika berhasil.
-	//
-	// [TODO]
-	// - Import dan gunakan utility `portal-berita/libs/conv` (`conv.GenerateSlug`) untuk membuat URL-friendly slug.
-	// - Tambahkan validasi batas panjang karakter title (misal maksimal 200 karakter sesuai skema DB).
+	var err error
+	var code string
 
-	panic("unimplemented")
+	if req.CreatedById <= 0 {
+		code = "[SERVICE] CreateCategory - 1"
+		log.Errorw(code, "error", err)
+		return nil, ErrInvalidId
+	}
+
+	if req.Slug == "" {
+		req.Slug = conv.GenerateSlug(req.Title)
+	}
+
+	category, err := c.categoryrepo.CreateCategory(ctx, req)
+
+	if err != nil {
+		code = "[SERVICE] CreateCategory - 2"
+		log.Errorw(code, "error", err)
+		return nil, err
+	}
+
+	return category, nil
 }
 
 // DeleteCategoryById implements [CategoryService].

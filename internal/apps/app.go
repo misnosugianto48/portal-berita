@@ -70,6 +70,7 @@ func RunServer() error {
 
 	categories := api.Group("/categories", authMiddleware.CheckToken())
 
+	categories.Post("", categoryHandler.CreateCategory)
 	categories.Get("/:id", categoryHandler.GetCategoryById)
 
 	if cfg.App.AppPort == "" {

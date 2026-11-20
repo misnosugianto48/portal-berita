@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"portal-berita/internal/adapters/handlers/requests"
 	"portal-berita/internal/adapters/handlers/responses"
 	"portal-berita/internal/adapters/repositories"
 	"portal-berita/internal/core/domains/entity"
@@ -29,32 +30,63 @@ func (c *categoryHandler) CreateCategory(ctx fiber.Ctx) error {
 	// [PSEUDOCODE - Alur Handler HTTP Fiber v3]
 	// 1. Inisialisasi request DTO:
 	//    var req requests.CreateCategoryRequest
-	// 2. Parsing body JSON dan jalankan auto-validasi:
-	//    if err := c.Bind().JSON(&req); err != nil {
-	//        return c.Status(fiber.StatusBadRequest).JSON(responses.ErrorResponseDefault{
-	//            Meta: responses.Meta{Status: false, Message: err.Error()},
-	//        })
-	//    }
-	// 3. Ambil data user yang sedang login dari context JWT middleware:
-	//    userClaims := c.Locals("user").(*entity.JWTClaims)
-	//    userId := int64(userClaims.UserId)
-	// 4. Petakan DTO ke domain entity:
-	//    categoryEntity := entity.CategoryEntity{
-	//        Title:       req.Title,
-	//        CreatedById: userId,
-	//    }
-	// 5. Panggil service:
-	//    if err := c.categoryServ.CreateCategory(c.Context(), categoryEntity); err != nil {
-	//        return c.Status(fiber.StatusInternalServerError).JSON(responses.ErrorResponseDefault{...})
-	//    }
-	// 6. Kembalikan respons sukses HTTP 201 Created:
-	//    return c.Status(fiber.StatusCreated).JSON(responses.DefaultSuccessResponse{...})
-	//
-	// [TODO]
-	// - Buat request struct `CreateCategoryRequest` di `internal/adapters/handlers/requests/category_request.go`
-	//   dengan tag validasi seperti `validate:"required,min=3,max=200"`.
-	// - Pasang middleware auth `middlewares.CheckToken()` pada rute `POST /categories`.
-	panic("unimplemented")
+
+	var code string
+	var errorResponse responses.ErrorResponseDefault
+
+	req := requests.CategoryRequest{}
+	res := responses.CategoryDetailResponse{}
+
+	userClaims, ok := ctx.Locals("user").(*entity.JWTClaims)
+
+	if !ok || userClaims == nil || userClaims.UserId == 0 {
+		errorResponse.Meta.Status = false
+		errorResponse.Meta.Message = "Unauthorized access"
+		return ctx.Status(fiber.StatusUnauthorized).JSON(errorResponse)
+	}
+
+	if err := ctx.Bind().JSON(&req); err != nil {
+		code = "[HANDLER] CreateCategory - 1"
+		log.Error().Err(err).Msg(code)
+		errorResponse.Meta.Status = false
+		errorResponse.Meta.Message = err.Error()
+
+		return ctx.Status(fiber.StatusBadRequest).JSON(errorResponse)
+	}
+
+	createdById := int64(userClaims.UserId)
+	createCategory := entity.CategoryEntity{
+		Title:       req.Title,
+		CreatedById: createdById,
+	}
+
+	result, err := c.categoryServ.CreateCategory(ctx.Context(), createCategory)
+
+	if err != nil {
+		code = "[HANDLER] CreateCategory - 2"
+		log.Error().Err(err).Msg(code)
+		errorResponse.Meta.Status = false
+
+		if errors.Is(err, repositories.ErrDuplicated) {
+			errorResponse.Meta.Message = "Category already exists"
+			return ctx.Status(fiber.StatusConflict).JSON(errorResponse)
+		}
+
+		errorResponse.Meta.Message = err.Error()
+		return ctx.Status(fiber.StatusInternalServerError).JSON(errorResponse)
+
+	}
+
+	res.Meta.Status = true
+	res.Meta.Message = "Category created successfully"
+	res.Data.Id = result.Id
+	res.Data.Title = result.Title
+	res.Data.Slug = result.Slug
+	res.Data.CreatedById = result.CreatedById
+	res.Data.CreatedAt = result.CreatedAt
+	res.Data.UpdatedAt = result.UpdatedAt
+
+	return ctx.Status(fiber.StatusCreated).JSON(res)
 }
 
 // DeleteCategoryById implements [CategoryHandlerInterface].
@@ -107,11 +139,7 @@ func (c *categoryHandler) GetCategories(ctx fiber.Ctx) error {
 
 // GetCategoryById implements [CategoryHandlerInterface].
 func (c *categoryHandler) GetCategoryById(ctx fiber.Ctx) error {
-	// TODO: Endpoint kategori ini diakses oleh Admin menggunakan token JWT.
-	// 1. Pastikan rute ini diproteksi oleh middleware auth: `middlewares.CheckToken()` (di app.go).
-	// 2. Data admin login dapat diambil dari context locals:
-	//    userClaims := ctx.Locals("user").(*entity.JWTClaims)
-	//    adminId := int64(userClaims.UserId)
+
 	var code string
 	var errorResponse responses.ErrorResponseDefault
 	res := responses.CategoryDetailResponse{}
@@ -154,6 +182,7 @@ func (c *categoryHandler) GetCategoryById(ctx fiber.Ctx) error {
 	res.Data.Id = result.Id
 	res.Data.Title = result.Title
 	res.Data.Slug = result.Slug
+	res.Data.CreatedById = result.CreatedById
 	res.Data.User.Id = result.User.Id
 	res.Data.User.Name = result.User.Name
 	res.Data.CreatedAt = result.CreatedAt
